@@ -30,12 +30,10 @@ public class UserService {
 		if (isUser.isPresent()) {
 			System.out.println("Email is present");
 			result.rejectValue("email","Taken","This email is already registered");
-			return null;
 		}
 		if (!passwordEntered.equals(confirmEntered)) {
 			System.out.println("Passwords did not match");
 			result.rejectValue("confirm","Matches","The passwords do not match");
-			return null;
 		}
 		
 		if (result.hasErrors()) {
@@ -49,7 +47,6 @@ public class UserService {
 			return newUser;
 		}
 		
-		
 	}
 	
 	
@@ -62,14 +59,11 @@ public class UserService {
 		Optional<User> isUser=userRepo.findByEmail(emailEntered);
 		
 		if (!isUser.isPresent()) {
-		System.out.println(!isUser.isPresent());
-			System.out.println("Rejecting email");
-			result.rejectValue("email", "None", "Invalid Email!");
+			result.rejectValue("email", "None", "Invalid Login/Password!");
 			return null;
 			}
 		if(!BCrypt.checkpw(passwordEntered, isUser.get().getPassword())) {
-			System.out.println("Rejecting password");
-		    result.rejectValue("password", "password", "Invalid Password!");
+		    result.rejectValue("password", "password", "Invalid Login/Password!");
 		    return null;
 		}
 
@@ -82,7 +76,7 @@ public class UserService {
 	}
 
 	
-	
+//	FIND USER BY ID
 	
 	public User findUserById(Long id) {
 		Optional<User> optionalUser=userRepo.findById(id);

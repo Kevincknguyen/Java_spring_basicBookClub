@@ -15,6 +15,9 @@ public class BookService {
 	public BookService(BookRepository bookRepo) {
 		this.bookRepo=bookRepo;
 	}
+	
+	
+	
 //	READ ALL
 	public List<Book> allBooks(){
 		return bookRepo.findAll();
@@ -30,7 +33,26 @@ public class BookService {
 	public Book findSpecificBook(Long id) {
 		Optional<Book> isBook=bookRepo.findById(id);
 		if(isBook.isPresent()) {
+			System.out.println("Service:Retreiving book");
 			return isBook.get();
+		}
+		else return null;
+	}
+	
+//	READ ALL BY BORROWED ID
+	public List<Book> findAllBorrowedBook(Long id) {
+		List<Book> isBooks=bookRepo.findAllByBorrow_id(id);
+		if(!isBooks.isEmpty()) {
+			return isBooks;
+		}
+		else return null;
+	}
+	
+//	READ ALL WHERE I OWN THE BOOKS
+	public List<Book> findAllMyBook(Long id) {
+		List<Book> isBooks=bookRepo.findAllByUser_id(id);
+		if(isBooks.isEmpty()==false) {
+			return isBooks;
 		}
 		else return null;
 	}
@@ -53,12 +75,34 @@ public class BookService {
 	}
 	
 	
+
+//	UPDATE BORROWER ID
+	public Book borrowBook(Book book) {
+		Optional<Book> isBook=bookRepo.findById(book.getId());
+		if(isBook.isPresent()) {
+			
+			Book newBook=isBook.get();
+			newBook.setBorrow(book.getBorrow());
+			bookRepo.save(newBook);
+			return newBook;
+			
+			
+		}
+		else return null;
+	}
 	
-	
-	
-	
-	
-	
+//	DELETE BOOK BY ITS ID
+	public String deleteBook(Long id) {
+	     Optional<Book> optionalBook = bookRepo.findById(id);
+	     if(optionalBook.isPresent()) {
+	    	 bookRepo.deleteById(id);
+	         return "Completed delete";
+	         
+	     } 
+	     else {
+	    	 return "No expense with ID found";
+	     }
+	 	}
 	
 	
 	

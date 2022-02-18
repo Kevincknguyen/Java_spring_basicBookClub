@@ -21,7 +21,6 @@
 	</div>
 
 <form:form action="/api/newBook" method="post" modelAttribute="book">
-			
 			<p>
 					<form:label path="title">Title</form:label>
 					<form:errors path="title" class="text-danger"/>

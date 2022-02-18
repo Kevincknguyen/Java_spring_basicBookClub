@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -36,22 +37,24 @@ public class ProjectController {
 	public String home(Model model) {
 		model.addAttribute("newUser", new User());
 		model.addAttribute("newLogin", new LoginUser());
-				
-		
 		return "LoginRegister.jsp";
-		
-		
 	}
 	
 //	ACCOUNT HOME
 	@GetMapping("/index")
-	public String index(HttpSession session,Model model) {
+	public String index(HttpSession session,Model model,@ModelAttribute("book") Book book) {
 		if(session.getAttribute("currentUser")==null) {
 			return "redirect:/";
 		}
-		model.addAttribute("currentUser",session.getAttribute("currentUser"));
-		List<Book> books=bookService.allBooks();
-		model.addAttribute("books",books);
+		
+		List<Book> allBooks = bookService.findAllBorrowedBook(null);
+		List<Book> borrowedBooks = bookService.findAllBorrowedBook((Long) session.getAttribute("currentID"));
+		List<Book> myBooks = bookService.findAllMyBook((Long) session.getAttribute("currentID"));
+		
+		model.addAttribute("books",allBooks);
+		model.addAttribute("borrow",borrowedBooks);
+		model.addAttribute("myBooks",myBooks);
+		model.addAttribute("null",null);
 		return "Index.jsp";
 	}
 	
@@ -59,31 +62,23 @@ public class ProjectController {
 //	NEW BOOK PAGE
 	@GetMapping("/addnewbook")
 	public String addnewbookpage(
-			@ModelAttribute("book") Book book,
-			HttpSession session,
-			Model model) {
-		
-		
-//		model.addAttribute("currentUser",session.getAttribute("currentUser"));
+			HttpSession session, @ModelAttribute("book") Book book) {
 		
 		if(session.getAttribute("currentUser")==null) {
 			return "redirect:/";
 		}
 		else {
-			
 		}
 		return "AddBook.jsp";
 	}
 	
-	
-	
-	
+
 //	SHOW ONE PAGE
 	
 	@GetMapping("/showbook/{id}")
 	public String showPage(Model model, HttpSession session,@PathVariable("id") Long id) {
 		Book specific=bookService.findSpecificBook(id);
-		model.addAttribute("currentUser",session.getAttribute("currentUser"));
+		
 		if (specific!=null) {
 			model.addAttribute("book",specific);
 			return "ShowBook.jsp";
@@ -96,12 +91,6 @@ public class ProjectController {
 	@GetMapping("/editbook/{id}")
 	public String shoeEditPage(Model model, HttpSession session,@PathVariable("id") Long id) {
 		Book specific=bookService.findSpecificBook(id);
-		System.out.println("Specific"+specific.getUser().getId());
-		System.out.println("Current user"+session.getAttribute("currentID"));
-		
-		
-		
-		
 		
 		if (specific!=null) {
 			if(specific.getUser().getId() !=session.getAttribute("currentID")) {
@@ -110,7 +99,7 @@ public class ProjectController {
 			model.addAttribute("book",specific);
 			return "EditBook.jsp";
 		}
-		else return "redirect:/index";
+		else {return "redirect:/index";}
 	}
 	
 	
@@ -135,16 +124,20 @@ public class ProjectController {
 			Model model,
 			HttpSession session) {
 		
-		User verified= userService.register(newUser,result);
 		
 		if (result.hasErrors()) {
 			model.addAttribute("newLogin",new LoginUser());
 			return "LoginRegister.jsp";
 		}
 		
-		session.setAttribute("currentUser", verified);
-		session.setAttribute("currentID", verified.getId());
-		System.out.println(session.getAttribute("currentUser"));
+		User verifiedUser= userService.register(newUser,result);
+		if (verifiedUser==null) {
+			model.addAttribute("newLogin",new LoginUser());
+			return "LoginRegister.jsp";
+		}
+		session.setAttribute("currentUser", verifiedUser);
+		session.setAttribute("currentID", verifiedUser.getId());
+		System.out.println("Registering account");
 		return "redirect:/index";
 	}
 	
@@ -156,30 +149,24 @@ public class ProjectController {
 			Model model,
 			HttpSession session) {
 		
-		
-		if (result.hasErrors()) {
-			model.addAttribute("newUser",new User());
-			return "LoginRegister.jsp";
-		}
-		else {
 			
-		User verified=userService.login(newLogin,result);
-		if (verified==null) {
+		User verifiedUser=userService.login(newLogin,result);
+		
+		if (verifiedUser==null || result.hasErrors()) {
 			model.addAttribute("newUser",new User());
 			return "LoginRegister.jsp";
-		}
 		
-		session.setAttribute("currentUser", verified);
-		session.setAttribute("currentID", verified.getId());
-		return "redirect:/index";
 		}
+		session.setAttribute("currentUser", verifiedUser);
+		session.setAttribute("currentID", verifiedUser.getId());
+		System.out.println("Logging in");
+		return "redirect:/index";
 	}
 	
 //	LOGOUT
 	@PostMapping("/logout")
 	public String logout(HttpSession session) {
-		session.removeAttribute("currentUser");
-		session.removeAttribute("currentID");
+		session.invalidate();
 		return "redirect:/";
 		
 	}
@@ -195,8 +182,8 @@ public class ProjectController {
 		if (result.hasErrors()) {
 			return "AddBook.jsp";
 		}
+//		book.setUser( (User) session.getAttribute("currentUser"));
 		bookService.createBook(book);
-		System.out.println("Creating book...");
 		return"redirect:/index";
 		
 	}
@@ -207,6 +194,7 @@ public class ProjectController {
 			@PathVariable ("id")Long id,
 			@Valid @ModelAttribute("book")Book book,
 			BindingResult result) {
+		
 		if (result.hasErrors()) {
 			return "EditBook.jsp";
 		} else {
@@ -214,6 +202,36 @@ public class ProjectController {
 			return "redirect:/index";
 		}
 	}
+	
+	
+	
+//	BORROW BOOK
+	@RequestMapping(value="/api/borrow/{id}", method=RequestMethod.PUT)
+	public String borrowBook(@PathVariable ("id")Long id, 
+			HttpSession session,
+			@ModelAttribute("book") Book book) {
+		bookService.borrowBook(book);
+		return "redirect:/index";
+		
+	}
+	
+	
+//	DELETE BOOK
+	@DeleteMapping("/deletebook/{id}")
+	public String deleteBook(@PathVariable("id")Long id) {
+		bookService.deleteBook(id);
+		return "redirect:/index";
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	
 	
 }

@@ -11,6 +11,8 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.OneToMany;
+import javax.persistence.PrePersist;
+import javax.persistence.PreUpdate;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 import javax.validation.constraints.Email;
@@ -61,6 +63,9 @@ public class User {
 		    
 		 @OneToMany(mappedBy="user",fetch=FetchType.LAZY,cascade=CascadeType.ALL) 
 		 private List<Book> books;
+		 
+		 @OneToMany(mappedBy="user",fetch=FetchType.LAZY,cascade=CascadeType.ALL) 
+		 private List<Book> borrowBooks;
 	    
 	    public User() {
 	    	
@@ -139,7 +144,15 @@ public class User {
 		}
 	    
 	    
-	    
+		 @PrePersist
+		    protected void onCreate() {
+		    	this.createdAt=new Date();
+		    }
+		    
+	    @PreUpdate
+	    protected void onUpdate() {
+	    	this.updatedAt=new Date();
+	    }
 	    
 	    
 	    

@@ -10,6 +10,8 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.PrePersist;
+import javax.persistence.PreUpdate;
 import javax.persistence.Table;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
@@ -45,6 +47,11 @@ public class Book {
     @JoinColumn(name="user_id")
     private User user;
     
+    @ManyToOne(fetch=FetchType.LAZY)
+    @JoinColumn(name="borrow_id")
+    private User borrow;
+    
+    
     public Book() {
     	
     }
@@ -55,6 +62,38 @@ public class Book {
     
     
     
+    
+    @PrePersist
+    protected void onCreate() {
+    	this.createdAt=new Date();
+    }
+    
+    @PreUpdate
+    protected void onUpdate() {
+    	this.updatedAt=new Date();
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+	public User getBorrow() {
+		return borrow;
+	}
+
+
+	public void setBorrow(User borrow) {
+		this.borrow = borrow;
+	}
 
 	public Long getId() {
 		return id;
